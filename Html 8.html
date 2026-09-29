@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雨 Flashcards — แฟลชการ์ดจีน ธีมฝนตก</title>
+<style>
+  :root{
+    --ink:#e8f1f8;
+    --muted:#9fb6c9;
+    --glass:rgba(18,32,48,.55);
+    --line:rgba(160,200,230,.18);
+    --ok:#4fd1a5;
+    --no:#ff7a8a;
+    --accent:#7ec8ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Noto Sans Thai","Segoe UI",system-ui,-apple-system,sans-serif;
+    background:linear-gradient(180deg,#060d16 0%,#0c1a2b 45%,#102337 100%);
+    color:var(--ink);
+    min-height:100%;
+    overflow-x:hidden;
+    display:flex;flex-direction:column;align-items:center;
+  }
+
+  /* ---------- ฉากหลังฝน ---------- */
+  #rain{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .fog{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(60% 50% at 50% 0%,rgba(126,200,255,.10),transparent 70%),
+               radial-gradient(80% 60% at 20% 100%,rgba(80,140,200,.10),transparent 70%);
+    animation:drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes drift{from{transform:translate3d(-2%,0,0) scale(1.02)}to{transform:translate3d(2%,-2%,0) scale(1.08)}}
+  .flash{
+    position:fixed;inset:0;z-index:2;pointer-events:none;background:#cfe9ff;opacity:0;
+  }
+  .flash.on{animation:lightning 1.1s ease-out;}
+  @keyframes lightning{
+    0%{opacity:0}4%{opacity:.35}8%{opacity:.04}14%{opacity:.28}22%{opacity:0}100%{opacity:0}
+  }
+  /* แอ่งน้ำ + ระลอกคลื่นด้านล่าง */
+  .puddle{
+    position:fixed;left:0;right:0;bottom:0;height:130px;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg,transparent,rgba(126,200,255,.07) 40%,rgba(126,200,255,.13));
+    overflow:hidden;
+  }
+  .ripple{
+    position:absolute;bottom:0;border:1px solid rgba(180,220,255,.45);
+    border-radius:50%;transform:translate(-50%,50%);animation:rip 2.4s ease-out forwards;
+  }
+  @keyframes rip{
+    0%{width:2px;height:1px;opacity:.8}
+    100%{width:120px;height:34px;opacity:0}
+  }
+
+  /* ---------- โครงหน้า ---------- */
+  .wrap{position:relative;z-index:3;width:100%;max-width:560px;padding:22px 18px 40px;}
+  header{text-align:center;margin-bottom:16px;}
+  h1{font-size:1.35rem;font-weight:700;letter-spacing:.5px;}
+  h1 span{color:var(--accent);}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:4px;}
+
+  .bar{
+    display:flex;gap:8px;align-items:center;justify-content:space-between;
+    background:var(--glass);border:1px solid var(--line);border-radius:14px;
+    padding:10px 12px;backdrop-filter:blur(10px);margin-bottom:12px;flex-wrap:wrap;
+  }
+  .chip{font-size:.8rem;color:var(--muted);}
+  .chip b{color:var(--ink);}
+  .chip.ok b{color:var(--ok)}.chip.no b{color:var(--no)}
+  .toggle{
+    display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:.82rem;
+  }
+  .switch{width:42px;height:23px;border-radius:99px;background:rgba(255,255,255,.12);
+    border:1px solid var(--line);position:relative;transition:.25s;}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+    background:var(--accent);transition:.25s;box-shadow:0 0 10px rgba(126,200,255,.7);}
+  .toggle.on .switch{background:rgba(126,200,255,.28)}
+  .toggle.on .switch::after{left:21px}
+
+  .progress{height:5px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:18px;}
+  .progress i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#4fd1a5,#7ec8ff);transition:width .35s ease;}
+
+  /* ---------- การ์ด ---------- */
+  .stage{perspective:1400px;height:340px;margin-bottom:18px;}
+  .card{
+    position:relative;width:100%;height:100%;transform-style:preserve-3d;
+    transition:transform .65s cubic-bezier(.3,.9,.3,1);cursor:pointer;
+  }
+  .card.flipped{transform:rotateY(180deg);}
+  .card.in{animation:dropIn .5s cubic-bezier(.2,1.1,.4,1);}
+  .card.outL{animation:outL .32s ease-in forwards;}
+  .card.outR{animation:outR .32s ease-in forwards;}
+  @keyframes dropIn{from{opacity:0;transform:translateY(-38px) scale(.94)}to{opacity:1;transform:none}}
+  @keyframes outL{to{opacity:0;transform:translateX(-90px) rotate(-7deg)}}
+  @keyframes outR{to{opacity:0;transform:translateX(90px) rotate(7deg)}}
+
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    border-radius:22px;border:1px solid var(--line);
+    background:linear-gradient(160deg,rgba(28,48,70,.75),rgba(12,24,38,.75));
+    backdrop-filter:blur(14px);
+    box-shadow:0 18px 50px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:26px;text-align:center;overflow:hidden;
+  }
+  .face::before{ /* หยดน้ำบนกระจกการ์ด */
+    content:"";position:absolute;inset:0;opacity:.35;pointer-events:none;
+    background:
+      radial-gradient(4px 6px at 18% 22%,rgba(255,255,255,.5),transparent 60%),
+      radial-gradient(3px 5px at 72% 16%,rgba(255,255,255,.4),transparent 60%),
+      radial-gradient(5px 8px at 86% 62%,rgba(255,255,255,.35),transparent 60%),
+      radial-gradient(3px 4px at 30% 78%,rgba(255,255,255,.4),transparent 60%),
+      radial-gradient(2px 3px at 55% 45%,rgba(255,255,255,.35),transparent 60%);
+  }
+  .back{transform:rotateY(180deg);}
+  .hanzi{font-size:5.4rem;line-height:1.15;font-weight:600;
+    font-family:"Noto Serif SC","PingFang SC","Microsoft YaHei",serif;
+    text-shadow:0 0 26px rgba(126,200,255,.35);}
+  .hanzi.small{font-size:3.8rem;}
+  .pinyin{font-size:1.5rem;color:var(--accent);letter-spacing:1px;margin-bottom:10px;}
+  .mean{font-size:1.05rem;color:#dbe8f3;line-height:1.7;}
+  .hint{position:absolute;bottom:14px;font-size:.72rem;color:var(--muted);letter-spacing:.5px;}
+  .tagtop{position:absolute;top:14px;font-size:.7rem;color:var(--muted);letter-spacing:2px;}
+
+  /* ---------- ปุ่ม ---------- */
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  button{
+    font-family:inherit;font-size:.95rem;font-weight:600;color:var(--ink);cursor:pointer;
+    padding:14px 10px;border-radius:14px;border:1px solid var(--line);
+    background:var(--glass);backdrop-filter:blur(8px);transition:.18s;
+  }
+  button:hover{transform:translateY(-2px);}
+  button:active{transform:scale(.97);}
+  .no-btn{border-color:rgba(255,122,138,.45);color:#ffc3cb;}
+  .no-btn:hover{background:rgba(255,122,138,.16);box-shadow:0 0 22px rgba(255,122,138,.25);}
+  .ok-btn{border-color:rgba(79,209,165,.45);color:#b6f2de;}
+  .ok-btn:hover{background:rgba(79,209,165,.16);box-shadow:0 0 22px rgba(79,209,165,.25);}
+  .mini{display:flex;gap:10px;justify-content:center;}
+  .mini button{flex:1;font-size:.82rem;font-weight:500;padding:10px;color:var(--muted);}
+  .mini button:hover{color:var(--ink);}
+
+  /* ---------- จบรอบ ---------- */
+  .done{
+    display:none;text-align:center;padding:34px 22px;border-radius:22px;
+    background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);
+    animation:dropIn .5s ease;
+  }
+  .done h2{font-size:1.4rem;margin-bottom:8px;}
+  .done p{color:var(--muted);margin-bottom:18px;line-height:1.8;}
+  .done .mini{margin-top:6px;}
+  @media(max-width:420px){.hanzi{font-size:4.4rem}.hanzi.small{font-size:3.1rem}.stage{height:300px}}
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<div class="fog"></div>
+<div class="flash" id="flash"></div>
+<div class="puddle" id="puddle"></div>
+
+<div class="wrap">
+  <header>
+    <h1>雨 <span>Flashcards</span></h1>
+    <div class="sub">คำศัพท์จีน · ชุด 传 / 优 / 价 / 伙</div>
+  </header>
+
+  <div class="bar">
+    <div class="chip">เหลือ <b id="left">0</b> ใบ</div>
+    <div class="chip ok">จำได้ <b id="okc">0</b></div>
+    <div class="chip no">จำไม่ได้ <b id="noc">0</b></div>
+    <div class="toggle" id="modeBtn"><span class="switch"></span><span id="modeTxt">หน้า: ตัวจีน</span></div>
+  </div>
+
+  <div class="progress"><i id="pbar"></i></div>
+
+  <div id="play">
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face front">
+          <div class="tagtop" id="tagF">CHINESE</div>
+          <div id="frontBody"></div>
+          <div class="hint">แตะการ์ดเพื่อพลิก</div>
+        </div>
+        <div class="face back">
+          <div class="tagtop" id="tagB">MEANING</div>
+          <div id="backBody"></div>
+          <div class="hint">แตะอีกครั้งเพื่อกลับด้าน</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="no-btn" id="noBtn">✕ จำไม่ได้</button>
+      <button class="ok-btn" id="okBtn">✓ จำได้</button>
+    </div>
+    <div class="mini">
+      <button id="shuffleBtn">สุ่มลำดับใหม่</button>
+      <button id="restartBtn">เริ่มใหม่ทั้งหมด</button>
+    </div>
+  </div>
+
+  <div class="done" id="done">
+    <h2>ฝนซาแล้ว ☂</h2>
+    <p id="doneTxt"></p>
+    <div class="actions">
+      <button class="no-btn" id="reviewBtn">ทบทวนคำที่จำไม่ได้</button>
+      <button class="ok-btn" id="againBtn">เริ่มรอบใหม่</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= ข้อมูลคำศัพท์ ================= */
+const DATA = [
+  {h:"传",p:"chuán",m:"ถ่ายทอด, เผยแพร่, สืบต่อ"},
+  {h:"传统",p:"chuántǒng",m:"ประเพณี, ธรรมเนียมปฏิบัติ"},
+  {h:"宣传",p:"xuānchuán",m:"ประชาสัมพันธ์, โฆษณาชวนเชื่อ, เผยแพร่"},
+  {h:"传达",p:"chuándá",m:"ถ่ายทอด (คำสั่ง, นโยบาย, ความคิด), แจ้งให้ทราบ"},
+  {h:"传染",p:"chuánrǎn",m:"ติดต่อ, แพร่เชื้อ"},
+  {h:"传说",p:"chuánshuō",m:"ตำนาน, เรื่องเล่าสืบต่อกันมา"},
+  {h:"流传",p:"liúchuán",m:"แพร่หลาย, สืบทอดต่อกันมา (เรื่องราว, วัฒนธรรม)"},
+  {h:"伍",p:"wǔ",m:"กอง, ขบวน"},
+  {h:"队伍",p:"duìwǔ",m:"ขบวน, แถว, กองกำลัง"},
+  {h:"优",p:"yōu",m:"ดีเยี่ยม, ยอดเยี่ยม"},
+  {h:"优点",p:"yōudiǎn",m:"ข้อดี, จุดเด่น"},
+  {h:"优良",p:"yōuliáng",m:"ดีงาม, ดีเลิศ (มักใช้กับคุณภาพ, นิสัย, สายพันธุ์)"},
+  {h:"优美",p:"yōuměi",m:"สวยงาม, งดงาม (ทิวทัศน์, ท่าทาง, ดนตรี)"},
+  {h:"优秀",p:"yōuxiù",m:"ยอดเยี่ยม, ดีเด่น"},
+  {h:"优胜",p:"yōushèng",m:"ชนะเลิศ, มีชัยชนะ"},
+  {h:"优势",p:"yōushì",m:"ความได้เปรียบ, จุดแข็ง"},
+  {h:"优越",p:"yōuyuè",m:"เหนือกว่า, ดีกว่า, ได้เปรียบกว่า"},
+  {h:"价",p:"jià",m:"ราคา, คุณค่า"},
+  {h:"价格",p:"jiàgé",m:"ราคา"},
+  {h:"价值",p:"jiàzhí",m:"มูลค่า, คุณค่า"},
+  {h:"物价",p:"wùjià",m:"ราคาสินค้า, ค่าครองชีพ"},
+  {h:"代价",p:"dàijià",m:"สิ่งที่ต้องจ่ายไป, ผลตอบแทนที่ต้องสูญเสีย (เพื่อแลกกับบางสิ่ง)"},
+  {h:"价钱",p:"jiàqián",m:"ราคา (มักใช้ในภาษาพูด)"},
+  {h:"评价",p:"píngjià",m:"ประเมินค่า, การประเมิน"},
+  {h:"份",p:"fèn",m:"ส่วน, ชุด, ฉบับ (ลักษณนาม)"},
+  {h:"成份",p:"chéngfèn",m:"ส่วนประกอบ, องค์ประกอบ"},
+  {h:"身份",p:"shēnfèn",m:"ฐานะ, สถานภาพ, ตัวตน"},
+  {h:"仰",p:"yǎng",m:"เงย, แหงนหน้า, เคารพเทิดทูน (เช่น 仰头 เงยหน้า)"},
+  {h:"仿",p:"fǎng",m:"เลียนแบบ, คล้ายคลึง"},
+  {h:"仿佛",p:"fǎngfú",m:"ราวกับว่า, ดูเหมือนว่า"},
+  {h:"模仿",p:"mófǎng",m:"เลียนแบบ (ท่าทาง, เสียง, การกระทำ)"},
+  {h:"伙",p:"huǒ",m:"กลุ่ม, พวก, รวมกลุ่ม"},
+  {h:"大伙儿",p:"dàhuǒr",m:"ทุกคน, พวกเราทุกคน"},
+  {h:"伙食",p:"huǒshí",m:"อาหารการกิน (อาหารที่จัดเตรียมรวมกัน เช่น โรงอาหาร, ค่าย)"},
+  {h:"小伙子",p:"xiǎohuǒzi",m:"ชายหนุ่ม, พ่อหนุ่ม"},
+  {h:"伙伴",p:"huǒbàn",m:"เพื่อน, คู่หู, หุ้นส่วน"},
+  {h:"家伙",p:"jiāhuo",m:"หมอนั่น, เจ้าบ้านั่น, เครื่องมือ/อาวุธ (ไม่เป็นทางการ)"},
+  {h:"似",p:"sì / shì",m:"คล้าย, เหมือน, ดูเหมือน (似乎 ดูเหมือนว่า, 似的 เหมือนกับว่า)"}
+];
+
+/* ================= สถานะเกม ================= */
+let deck=[], idx=0, okCount=0, noCount=0, missed=[], reverse=false, busy=false;
+const $=id=>document.getElementById(id);
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function start(list){
+  deck=shuffle([...list]); idx=0; okCount=0; noCount=0; missed=[];
+  $("play").style.display="block"; $("done").style.display="none";
+  render(true); updateBar();
+}
+
+function render(animate){
+  const c=deck[idx]; if(!c)return;
+  const long=c.h.length>2;
+  const hanziHTML=`<div class="hanzi${long?" small":""}">${c.h}</div>`;
+  const infoHTML=`<div class="pinyin">${c.p}</div><div class="mean">${c.m}</div>`;
+  if(!reverse){
+    $("frontBody").innerHTML=hanziHTML; $("tagF").textContent="汉字 CHINESE";
+    $("backBody").innerHTML=infoHTML;   $("tagB").textContent="PINYIN · ความหมาย";
+  }else{
+    $("frontBody").innerHTML=infoHTML;  $("tagF").textContent="PINYIN · ความหมาย";
+    $("backBody").innerHTML=hanziHTML;  $("tagB").textContent="汉字 CHINESE";
+  }
+  const card=$("card");
+  card.classList.remove("flipped","outL","outR","in");
+  if(animate){void card.offsetWidth; card.classList.add("in");}
+}
+
+function updateBar(){
+  $("left").textContent=Math.max(deck.length-idx,0);
+  $("okc").textContent=okCount;
+  $("noc").textContent=noCount;
+  $("pbar").style.width=(deck.length?(idx/deck.length*100):0)+"%";
+}
+
+function answer(known){
+  if(busy)return; busy=true;
+  const card=$("card");
+  if(known){okCount++; card.classList.add("outR");}
+  else{noCount++; missed.push(deck[idx]); card.classList.add("outL");}
+  splash(known);
+  setTimeout(()=>{
+    idx++; updateBar();
+    if(idx>=deck.length){finish();}else{render(true);}
+    busy=false;
+  },330);
+}
+
+function finish(){
+  $("play").style.display="none";
+  $("done").style.display="block";
+  $("pbar").style.width="100%";
+  const pct=deck.length?Math.round(okCount/deck.length*100):0;
+  $("doneTxt").innerHTML=`จบรอบนี้แล้ว &nbsp;·&nbsp; จำได้ <b style="color:var(--ok)">${okCount}</b> / ${deck.length} คำ (${pct}%)<br>
+    ${missed.length?`ยังมี <b style="color:var(--no)">${missed.length}</b> คำที่ต้องทบทวน`:"เก่งมาก! ไม่มีคำตกค้างเลย 🌧"}`;
+  $("reviewBtn").style.display=missed.length?"block":"none";
+  flash();
+}
+
+/* ================= อีเวนต์ ================= */
+$("card").onclick=()=>$("card").classList.toggle("flipped");
+$("okBtn").onclick=()=>answer(true);
+$("noBtn").onclick=()=>answer(false);
+$("shuffleBtn").onclick=()=>{shuffle(deck);idx=0;okCount=0;noCount=0;missed=[];render(true);updateBar();};
+$("restartBtn").onclick=()=>start(DATA);
+$("againBtn").onclick=()=>start(DATA);
+$("reviewBtn").onclick=()=>start(missed);
+$("modeBtn").onclick=function(){
+  reverse=!reverse; this.classList.toggle("on",reverse);
+  $("modeTxt").textContent=reverse?"หน้า: พินอิน+แปล":"หน้า: ตัวจีน";
+  render(true);
+};
+document.addEventListener("keydown",e=>{
+  if($("play").style.display==="none")return;
+  if(e.code==="Space"){e.preventDefault();$("card").classList.toggle("flipped");}
+  if(e.key==="ArrowRight")answer(true);
+  if(e.key==="ArrowLeft")answer(false);
+});
+
+/* ================= เอฟเฟกต์น้ำกระเซ็นตอนตอบ ================= */
+function splash(known){
+  const p=$("puddle");
+  for(let i=0;i<7;i++){
+    const r=document.createElement("div");
+    r.className="ripple";
+    r.style.left=(20+Math.random()*60)+"%";
+    r.style.bottom=(Math.random()*70)+"px";
+    r.style.borderColor=known?"rgba(79,209,165,.55)":"rgba(255,122,138,.5)";
+    r.style.animationDelay=(i*60)+"ms";
+    p.appendChild(r);
+    setTimeout(()=>r.remove(),2600);
+  }
+}
+
+/* ================= ฝนตก (canvas) ================= */
+const cv=$("rain"), ctx=cv.getContext("2d");
+let W,H,drops=[];
+function resize(){
+  W=cv.width=innerWidth; H=cv.height=innerHeight;
+  const n=Math.floor(W/6);
+  drops=Array.from({length:n},()=>newDrop(true));
+}
+function newDrop(init){
+  const z=Math.random();           // ความลึก 0=ไกล 1=ใกล้
+  return{
+    x:Math.random()*W,
+    y:init?Math.random()*H:-20,
+    len:6+z*22,
+    sp:3+z*11,
+    w:z<.4?.7:1.3,
+    a:.15+z*.45,
+    sw:-0.6-z*0.8               // เอียงตามลม
+  };
+}
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  ctx.lineCap="round";
+  for(const d of drops){
+    ctx.strokeStyle=`rgba(170,215,255,${d.a})`;
+    ctx.lineWidth=d.w;
+    ctx.beginPath();
+    ctx.moveTo(d.x,d.y);
+    ctx.lineTo(d.x+d.sw*2,d.y+d.len);
+    ctx.stroke();
+    d.y+=d.sp; d.x+=d.sw;
+    if(d.y>H+20||d.x<-30){
+      if(Math.random()<.35)makeRipple(d.x);
+      Object.assign(d,newDrop(false));
+    }
+  }
+  requestAnimationFrame(loop);
+}
+function makeRipple(x){
+  const p=$("puddle");
+  const r=document.createElement("div");
+  r.className="ripple";
+  r.style.left=x+"px";
+  r.style.bottom=(Math.random()*90)+"px";
+  p.appendChild(r);
+  setTimeout(()=>r.remove(),2500);
+}
+function flash(){
+  const f=$("flash");
+  f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+}
+setInterval(()=>{if(Math.random()<.35)flash();},7000);
+
+addEventListener("resize",resize);
+resize(); loop(); start(DATA);
+</script>
+</body>
+</html>
